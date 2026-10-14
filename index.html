@@ -1,1 +1,393 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alışkanlık ve Seri Takip Paneli</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .check-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .check-btn:active { transform: scale(0.9); }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
 
+    <div class="max-w-6xl mx-auto space-y-6">
+        
+        <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-card p-6 rounded-2xl">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+                    <i data-lucide="flame" class="text-amber-500 w-7 h-7"></i>
+                    Haftalık Alışkanlık & Seri Paneli
+                </h1>
+                <p id="currentDateText" class="text-slate-400 text-sm mt-1"></p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="resetWeek()" class="px-4 py-2 text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 transition flex items-center gap-2">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Haftayı Sıfırla
+                </button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="glass-card p-5 rounded-2xl flex items-center justify-between">
+                <div>
+                    <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Bugünkü İlerleme</p>
+                    <h2 id="todayProgressText" class="text-3xl font-bold text-white mt-1">0%</h2>
+                    <p id="todayCountText" class="text-xs text-emerald-400 mt-1">0 / 0 hedef tamamlandı</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                    <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <div class="glass-card p-5 rounded-2xl flex items-center justify-between">
+                <div>
+                    <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">En Yüksek Aktif Seri</p>
+                    <h2 id="bestStreakText" class="text-3xl font-bold text-amber-400 mt-1">0 Gün</h2>
+                    <p id="bestStreakHabit" class="text-xs text-slate-400 mt-1">Henüz seri yok</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                    <i data-lucide="zap" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <div class="glass-card p-5 rounded-2xl flex items-center justify-between">
+                <div>
+                    <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Haftalık Başarı Oranı</p>
+                    <h2 id="weeklyRateText" class="text-3xl font-bold text-indigo-400 mt-1">0%</h2>
+                    <p id="weeklyTotalText" class="text-xs text-slate-400 mt-1">Toplam 0 tamamlanan görev</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                    <i data-lucide="trending-up" class="w-6 h-6"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <div class="lg:col-span-2 glass-card p-6 rounded-2xl flex flex-col justify-between space-y-6">
+                <div>
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                        <h3 class="text-lg font-semibold text-white">Günlük Hedef Matrisi</h3>
+                        
+                        <form id="addHabitForm" class="flex items-center gap-2">
+                            <input 
+                                type="text" 
+                                id="habitInput" 
+                                placeholder="Yeni hedef ekle..." 
+                                required
+                                class="bg-slate-900/80 border border-slate-700 text-sm text-white rounded-xl px-3.5 py-2 focus:outline-none focus:border-indigo-500 w-full sm:w-56"
+                            >
+                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0">
+                                <i data-lucide="plus" class="w-4 h-4"></i> Ekle
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr id="tableHeaderRow" class="border-b border-slate-800 text-xs font-semibold text-slate-400 uppercase">
+                                    <th class="py-3 pr-4">Alışkanlık</th>
+                                </tr>
+                            </thead>
+                            <tbody id="habitListBody" class="divide-y divide-slate-800/60 text-sm">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="text-xs text-slate-500 flex items-center justify-between pt-2 border-t border-slate-800/80">
+                    <span>İpucu: Kutucuklara tıklayarak ilgili günün hedefini tamamlandı olarak işaretleyebilirsin.</span>
+                    <span class="text-indigo-400 font-medium">Mavi Sütun = Bugün</span>
+                </div>
+            </div>
+
+            <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-1">Haftalık Performans Grafiği</h3>
+                    <p class="text-xs text-slate-400 mb-6">Günlere göre tamamlanan hedef sayısı ve seri ivmesi</p>
+                    <div class="relative h-64 w-full">
+                        <canvas id="weeklyChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-slate-800">
+                    <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Hedef Bazlı Seriler</h4>
+                    <div id="streakProgressList" class="space-y-2.5 max-h-40 overflow-y-auto pr-1">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const DAYS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+        const todayIndex = (new Date().getDay() + 6) % 7;
+
+        const defaultHabits = [
+            { id: 1, name: 'Yüzme / Antrenman', days: [true, false, true, true, false, false, false] },
+            { id: 2, name: 'Günün Ders & Not Tekrarı', days: [true, true, true, true, false, false, false] },
+            { id: 3, name: 'Kodlama & Proje Pratiği', days: [false, true, true, true, false, false, false] },
+            { id: 4, name: '2.5 Litre Su Tüketimi', days: [true, true, true, true, false, false, false] }
+        ];
+
+        let habits = JSON.parse(localStorage.getItem('habitTrackerData_v1')) || defaultHabits;
+        let chartInstance = null;
+
+        function saveData() {
+            localStorage.setItem('habitTrackerData_v1', JSON.stringify(habits));
+        }
+
+        function calculateStreak(daysArray) {
+            let streak = 0;
+            let startIdx = daysArray[todayIndex] ? todayIndex : todayIndex - 1;
+            for (let i = startIdx; i >= 0; i--) {
+                if (daysArray[i]) streak++;
+                else break;
+            }
+            return streak;
+        }
+
+        function renderHeader() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('currentDateText').textContent = now.toLocaleDateString('tr-TR', options);
+
+            const headerRow = document.getElementById('tableHeaderRow');
+            headerRow.innerHTML = `<th class="py-3 pr-4">Alışkanlık</th>`;
+            
+            DAYS.forEach((day, idx) => {
+                const isToday = idx === todayIndex;
+                headerRow.innerHTML += `
+                    <th class="py-3 px-2 text-center ${isToday ? 'text-indigo-400 font-bold' : ''}">
+                        <div class="flex flex-col items-center">
+                            <span>${day}</span>
+                            ${isToday ? '<span class="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1"></span>' : ''}
+                        </div>
+                    </th>
+                `;
+            });
+            headerRow.innerHTML += `<th class="py-3 pl-3 text-center">Seri</th><th class="py-3 pl-2 text-right"></th>`;
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('habitListBody');
+            tbody.innerHTML = '';
+
+            if (habits.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" class="text-center py-8 text-slate-500">Henüz bir alışkanlık eklenmedi. Yukarıdan yeni bir hedef ekleyebilirsin.</td></tr>`;
+                return;
+            }
+
+            habits.forEach(habit => {
+                const streak = calculateStreak(habit.days);
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/30 transition group';
+
+                let daysHtml = '';
+                habit.days.forEach((done, dayIdx) => {
+                    const isToday = dayIdx === todayIndex;
+                    daysHtml += `
+                        <td class="py-3.5 px-2 text-center ${isToday ? 'bg-indigo-500/5' : ''}">
+                            <button 
+                                onclick="toggleDay(${habit.id}, ${dayIdx})"
+                                class="check-btn w-8 h-8 rounded-lg inline-flex items-center justify-center border ${
+                                    done 
+                                    ? 'bg-emerald-500 border-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20' 
+                                    : isToday 
+                                        ? 'border-indigo-500/50 bg-slate-900/60 hover:border-indigo-400 text-transparent'
+                                        : 'border-slate-700 bg-slate-900/40 hover:border-slate-600 text-transparent'
+                                }"
+                            >
+                                <i data-lucide="check" class="w-4 h-4 stroke-[3]"></i>
+                            </button>
+                        </td>
+                    `;
+                });
+
+                tr.innerHTML = `
+                    <td class="py-3.5 pr-4 font-medium text-slate-200">${habit.name}</td>
+                    ${daysHtml}
+                    <td class="py-3.5 pl-3 text-center">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                            streak > 0 ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' : 'bg-slate-800 text-slate-500'
+                        }">
+                            🔥 ${streak}
+                        </span>
+                    </td>
+                    <td class="py-3.5 pl-2 text-right">
+                        <button onclick="deleteHabit(${habit.id})" class="text-slate-600 hover:text-rose-400 p-1 rounded-lg transition opacity-0 group-hover:opacity-100" title="Sil">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            lucide.createIcons();
+        }
+
+        function updateStatsAndChart() {
+            const totalHabits = habits.length;
+            
+            let todayCompleted = 0;
+            habits.forEach(h => { if (h.days[todayIndex]) todayCompleted++; });
+            const todayPercent = totalHabits > 0 ? Math.round((todayCompleted / totalHabits) * 100) : 0;
+            
+            document.getElementById('todayProgressText').textContent = `${todayPercent}%`;
+            document.getElementById('todayCountText').textContent = `${todayCompleted} / ${totalHabits} hedef tamamlandı`;
+
+            let maxStreak = 0;
+            let bestHabitName = 'Henüz seri yok';
+            habits.forEach(h => {
+                const s = calculateStreak(h.days);
+                if (s > maxStreak) {
+                    maxStreak = s;
+                    bestHabitName = h.name;
+                }
+            });
+            document.getElementById('bestStreakText').textContent = `${maxStreak} Gün`;
+            document.getElementById('bestStreakHabit').textContent = maxStreak > 0 ? bestHabitName : 'Bugün bir hedef tamamla!';
+
+            let weeklyCompleted = 0;
+            const dailyCounts = [0, 0, 0, 0, 0, 0, 0];
+            habits.forEach(h => {
+                h.days.forEach((done, idx) => {
+                    if (done) {
+                        weeklyCompleted++;
+                        dailyCounts[idx]++;
+                    }
+                });
+            });
+            const totalPossible = totalHabits * 7;
+            const weeklyRate = totalPossible > 0 ? Math.round((weeklyCompleted / totalPossible) * 100) : 0;
+            document.getElementById('weeklyRateText').textContent = `${weeklyRate}%`;
+            document.getElementById('weeklyTotalText').textContent = `Haftalık ${weeklyCompleted} / ${totalPossible} görev`;
+
+            const streakListEl = document.getElementById('streakProgressList');
+            streakListEl.innerHTML = '';
+            habits.forEach(h => {
+                const completedDays = h.days.filter(Boolean).length;
+                const pct = Math.round((completedDays / 7) * 100);
+                streakListEl.innerHTML += `
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-300 font-medium truncate pr-2">${h.name}</span>
+                            <span class="text-slate-400 shrink-0">${completedDays}/7 gün (%${pct})</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 rounded-full transition-all duration-300" style="width: ${pct}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            const ctx = document.getElementById('weeklyChart').getContext('2d');
+            if (chartInstance) {
+                chartInstance.data.datasets[0].data = dailyCounts;
+                chartInstance.options.scales.y.max = Math.max(totalHabits, 1);
+                chartInstance.update();
+            } else {
+                chartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: DAYS,
+                        datasets: [{
+                            label: 'Tamamlanan Hedef',
+                            data: dailyCounts,
+                            backgroundColor: DAYS.map((_, i) => i === todayIndex ? 'rgba(99, 102, 241, 0.85)' : 'rgba(16, 185, 129, 0.65)'),
+                            borderColor: DAYS.map((_, i) => i === todayIndex ? '#818cf8' : '#34d399'),
+                            borderWidth: 1,
+                            borderRadius: 8,
+                            barThickness: 22
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: '#1e293b',
+                                titleColor: '#f8fafc',
+                                bodyColor: '#cbd5e1',
+                                callbacks: {
+                                    label: (ctx) => ` ${ctx.raw} / ${habits.length} Hedef Tamamlandı`
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: Math.max(totalHabits, 1),
+                                ticks: { stepSize: 1, color: '#64748b' },
+                                grid: { color: 'rgba(148, 163, 184, 0.08)' }
+                            },
+                            x: {
+                                ticks: { color: '#94a3b8' },
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function toggleDay(habitId, dayIdx) {
+            const habit = habits.find(h => h.id === habitId);
+            if (habit) {
+                habit.days[dayIdx] = !habit.days[dayIdx];
+                saveData();
+                renderTable();
+                updateStatsAndChart();
+            }
+        }
+
+        function deleteHabit(habitId) {
+            habits = habits.filter(h => h.id !== habitId);
+            saveData();
+            renderTable();
+            updateStatsAndChart();
+        }
+
+        function resetWeek() {
+            if (confirm('Bu haftanın tüm işaretlerini sıfırlamak istediğine emin misin?')) {
+                habits.forEach(h => h.days = [false, false, false, false, false, false, false]);
+                saveData();
+                renderTable();
+                updateStatsAndChart();
+            }
+        }
+
+        document.getElementById('addHabitForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const input = document.getElementById('habitInput');
+            const name = input.value.trim();
+            if (name) {
+                habits.push({
+                    id: Date.now(),
+                    name: name,
+                    days: [false, false, false, false, false, false, false]
+                });
+                input.value = '';
+                saveData();
+                renderTable();
+                updateStatsAndChart();
+            }
+        });
+
+        renderHeader();
+        renderTable();
+        updateStatsAndChart();
+        lucide.createIcons();
+    </script>
+</body>
+</html>
