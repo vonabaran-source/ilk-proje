@@ -3,228 +3,889 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alışkanlık ve Seri Takip Paneli</title>
+    <title>Smart Habit & Life Coach PRO v3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
-        .check-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-        .check-btn:active { transform: scale(0.9); }
-        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        body { font-family: 'Inter', sans-serif; background-color: #0b1120; color: #f8fafc; }
+        .glass-card { background: rgba(30, 41, 59, 0.65); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .cell-btn { transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1); }
+        .cell-btn:hover { transform: translateY(-2px); }
+        .cell-btn:active { transform: scale(0.95); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8">
 
-    <div class="max-w-6xl mx-auto space-y-6">
+    <div class="max-w-7xl mx-auto space-y-6">
         
-        <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-card p-6 rounded-2xl">
-            <div>
-                <h1 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-                    <i data-lucide="flame" class="text-amber-500 w-7 h-7"></i>
-                    Haftalık Alışkanlık & Seri Paneli
-                </h1>
-                <p id="currentDateText" class="text-slate-400 text-sm mt-1"></p>
-            </div>
+        <!-- Üst Başlık ve Dil/Ayar Kontrolleri -->
+        <header class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 glass-card p-6 rounded-2xl">
             <div class="flex items-center gap-3">
-                <button onclick="resetWeek()" class="px-4 py-2 text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 transition flex items-center gap-2">
-                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Haftayı Sıfırla
+                <div class="w-11 h-11 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+                    <i data-lucide="globe" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h1 id="uiAppTitle" class="text-xl md:text-2xl font-bold tracking-tight text-white">Akıllı Yaşam & Hedef Koçu</h1>
+                        <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">GLOBAL v3.0</span>
+                    </div>
+                    <p id="currentDateText" class="text-slate-400 text-xs md:text-sm mt-0.5"></p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2.5">
+                <!-- Dil Seçici (Ayarlar) -->
+                <div class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-700/80 rounded-xl px-3 py-1.5">
+                    <i data-lucide="languages" class="w-4 h-4 text-indigo-400"></i>
+                    <select id="langSelector" onchange="changeLanguage(this.value)" class="bg-transparent text-xs font-semibold text-slate-200 focus:outline-none cursor-pointer pr-1">
+                        <option value="tr" class="bg-slate-900 text-white">🇹🇷 Türkçe (TR)</option>
+                        <option value="en" class="bg-slate-900 text-white">🇬🇧 English (EN)</option>
+                        <option value="de" class="bg-slate-900 text-white">🇩🇪 Deutsch (DE)</option>
+                        <option value="ru" class="bg-slate-900 text-white">🇷🇺 Русский (RU)</option>
+                    </select>
+                </div>
+
+                <button onclick="openAddHabitModal()" class="px-4 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl shadow-lg shadow-indigo-600/25 transition flex items-center gap-1.5">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span id="uiBtnAddHabit">Yeni Hedef Ekle</span>
+                </button>
+
+                <button onclick="resetToDefaults()" class="px-3.5 py-2.5 text-xs font-medium text-slate-300 bg-slate-800/80 hover:bg-slate-700 rounded-xl border border-slate-700 transition flex items-center gap-1.5">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                    <span id="uiBtnReset">Sıfırla</span>
                 </button>
             </div>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Üst 4'lü Özet Kartları -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div class="glass-card p-5 rounded-2xl flex items-center justify-between">
                 <div>
-                    <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Bugünkü İlerleme</p>
-                    <h2 id="todayProgressText" class="text-3xl font-bold text-white mt-1">0%</h2>
-                    <p id="todayCountText" class="text-xs text-emerald-400 mt-1">0 / 0 hedef tamamlandı</p>
+                    <p id="uiCard1Title" class="text-slate-400 text-xs font-medium uppercase tracking-wider">Bugün İdeal Hedefler</p>
+                    <h2 id="statTodayIdeal" class="text-2xl md:text-3xl font-bold text-emerald-400 mt-1">0 / 0</h2>
+                    <p id="statTodayPct" class="text-xs text-slate-400 mt-1">%0</p>
                 </div>
-                <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                <div class="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                     <i data-lucide="check-circle-2" class="w-6 h-6"></i>
                 </div>
             </div>
 
             <div class="glass-card p-5 rounded-2xl flex items-center justify-between">
                 <div>
-                    <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">En Yüksek Aktif Seri</p>
-                    <h2 id="bestStreakText" class="text-3xl font-bold text-amber-400 mt-1">0 Gün</h2>
-                    <p id="bestStreakHabit" class="text-xs text-slate-400 mt-1">Henüz seri yok</p>
+                    <p id="uiCard2Title" class="text-slate-400 text-xs font-medium uppercase tracking-wider">Eksik / Az Kalanlar</p>
+                    <h2 id="statTodayUnder" class="text-2xl md:text-3xl font-bold text-amber-400 mt-1">0</h2>
+                    <p id="uiCard2Sub" class="text-xs text-slate-400 mt-1">Bugün tamamlanması gereken</p>
                 </div>
-                <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                    <i data-lucide="zap" class="w-6 h-6"></i>
+                <div class="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                    <i data-lucide="alert-circle" class="w-6 h-6"></i>
                 </div>
             </div>
 
             <div class="glass-card p-5 rounded-2xl flex items-center justify-between">
                 <div>
-                    <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Haftalık Başarı Oranı</p>
-                    <h2 id="weeklyRateText" class="text-3xl font-bold text-indigo-400 mt-1">0%</h2>
-                    <p id="weeklyTotalText" class="text-xs text-slate-400 mt-1">Toplam 0 tamamlanan görev</p>
+                    <p id="uiCard3Title" class="text-slate-400 text-xs font-medium uppercase tracking-wider">Limit Aşımı (Fazla)</p>
+                    <h2 id="statWeekOver" class="text-2xl md:text-3xl font-bold text-rose-400 mt-1">0</h2>
+                    <p id="statTodayOverText" class="text-xs text-slate-400 mt-1"></p>
                 </div>
-                <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-                    <i data-lucide="trending-up" class="w-6 h-6"></i>
+                <div class="w-11 h-11 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+                    <i data-lucide="flame" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <div class="glass-card p-5 rounded-2xl flex items-center justify-between">
+                <div>
+                    <p id="uiCard4Title" class="text-slate-400 text-xs font-medium uppercase tracking-wider">En İyi İdeal Seri</p>
+                    <h2 id="statBestStreak" class="text-2xl md:text-3xl font-bold text-indigo-400 mt-1">0</h2>
+                    <p id="statBestStreakName" class="text-xs text-slate-400 mt-1 truncate max-w-[160px]"></p>
+                </div>
+                <div class="w-11 h-11 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                    <i data-lucide="award" class="w-6 h-6"></i>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Akıllı Koç & Uyarı Merkezi -->
+        <div class="glass-card p-5 rounded-2xl border-l-4 border-l-indigo-500">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-3">
+                <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-indigo-400"></i>
+                    <span id="uiCoachTitle">Günlük Akıllı Analiz & Uyarı Raporu (Bugün)</span>
+                </h3>
+                <span id="uiCoachSub" class="text-xs text-slate-400">Değerleri değiştirdikçe anlık güncellenir</span>
+            </div>
+            <div id="smartAlertsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+        </div>
+
+        <!-- Ana İçerik: Sol Matris & Sağ Analiz -->
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
             
-            <div class="lg:col-span-2 glass-card p-6 rounded-2xl flex flex-col justify-between space-y-6">
+            <div class="xl:col-span-2 glass-card p-6 rounded-2xl flex flex-col justify-between space-y-5">
                 <div>
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                        <h3 class="text-lg font-semibold text-white">Günlük Hedef Matrisi</h3>
-                        
-                        <form id="addHabitForm" class="flex items-center gap-2">
-                            <input 
-                                type="text" 
-                                id="habitInput" 
-                                placeholder="Yeni hedef ekle..." 
-                                required
-                                class="bg-slate-900/80 border border-slate-700 text-sm text-white rounded-xl px-3.5 py-2 focus:outline-none focus:border-indigo-500 w-full sm:w-56"
-                            >
-                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0">
-                                <i data-lucide="plus" class="w-4 h-4"></i> Ekle
-                            </button>
-                        </form>
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                        <div>
+                            <h3 id="uiMatrixTitle" class="text-lg font-semibold text-white">Haftalık Hedef & Ölçüm Tablosu</h3>
+                            <p id="uiMatrixSub" class="text-xs text-slate-400">Kutucuklara tıklayarak o günün değerini girebilirsin.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3 text-xs bg-slate-900/70 px-3 py-2 rounded-xl border border-slate-800">
+                            <span class="flex items-center gap-1.5 text-emerald-400"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> <span id="uiLegendIdeal">İdeal</span></span>
+                            <span class="flex items-center gap-1.5 text-amber-400"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> <span id="uiLegendUnder">Az / Eksik</span></span>
+                            <span class="flex items-center gap-1.5 text-rose-400"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> <span id="uiLegendOver">Fazla / Aşım!</span></span>
+                        </div>
                     </div>
 
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
+                        <table class="w-full text-left border-collapse min-w-[680px]">
                             <thead>
-                                <tr id="tableHeaderRow" class="border-b border-slate-800 text-xs font-semibold text-slate-400 uppercase">
-                                    <th class="py-3 pr-4">Alışkanlık</th>
-                                </tr>
+                                <tr id="tableHeaderRow" class="border-b border-slate-800 text-xs font-semibold text-slate-400 uppercase"></tr>
                             </thead>
-                            <tbody id="habitListBody" class="divide-y divide-slate-800/60 text-sm">
-                            </tbody>
+                            <tbody id="habitListBody" class="divide-y divide-slate-800/60 text-sm"></tbody>
                         </table>
                     </div>
                 </div>
 
-                <div class="text-xs text-slate-500 flex items-center justify-between pt-2 border-t border-slate-800/80">
-                    <span>İpucu: Kutucuklara tıklayarak ilgili günün hedefini tamamlandı olarak işaretleyebilirsin.</span>
-                    <span class="text-indigo-400 font-medium">Mavi Sütun = Bugün</span>
+                <div class="text-xs text-slate-500 flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-800/80">
+                    <span id="uiMatrixFooterTip">💡 Sayısal kutulara tıklayıp değer girin. Onay kutularına tek tıklama yeterlidir.</span>
+                    <span id="uiMatrixFooterToday" class="text-indigo-400 font-medium">Mavi Sütun = Bugün</span>
                 </div>
             </div>
 
-            <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
+            <!-- Sağ Grafik ve Haftalık Kalite Özeti -->
+            <div class="glass-card p-6 rounded-2xl flex flex-col justify-between space-y-6">
                 <div>
-                    <h3 class="text-lg font-semibold text-white mb-1">Haftalık Performans Grafiği</h3>
-                    <p class="text-xs text-slate-400 mb-6">Günlere göre tamamlanan hedef sayısı ve seri ivmesi</p>
-                    <div class="relative h-64 w-full">
+                    <h3 id="uiChartTitle" class="text-lg font-semibold text-white mb-1">Haftalık Denge Grafiği</h3>
+                    <p id="uiChartSub" class="text-xs text-slate-400 mb-5">Günlük İdeal, Eksik ve Fazla Aşım dağılımı</p>
+                    <div class="relative h-60 w-full">
                         <canvas id="weeklyChart"></canvas>
                     </div>
                 </div>
 
-                <div class="mt-6 pt-4 border-t border-slate-800">
-                    <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Hedef Bazlı Seriler</h4>
-                    <div id="streakProgressList" class="space-y-2.5 max-h-40 overflow-y-auto pr-1">
-                    </div>
+                <div class="pt-4 border-t border-slate-800">
+                    <h4 id="uiSummaryTitle" class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Haftalık Ortalama & Durum</h4>
+                    <div id="weeklySummaryList" class="space-y-3 max-h-60 overflow-y-auto pr-1"></div>
                 </div>
             </div>
 
         </div>
     </div>
 
+    <!-- MODAL 1: Günlük Değer Girme Penceresi -->
+    <div id="entryModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5">
+            <div class="flex items-start justify-between">
+                <div>
+                    <span id="modalDayBadge" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300"></span>
+                    <h3 id="modalHabitTitle" class="text-lg font-bold text-white mt-1.5"></h3>
+                    <p id="modalRuleDesc" class="text-xs text-slate-400 mt-0.5"></p>
+                </div>
+                <button onclick="closeEntryModal()" class="text-slate-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-slate-400 mb-2">
+                    <span id="uiModalInputLabel">Miktar / Değer Girin</span> (<span id="modalUnitLabel"></span>)
+                </label>
+                <div class="flex items-center gap-2">
+                    <input 
+                        type="number" 
+                        step="any" 
+                        id="modalValueInput" 
+                        oninput="previewModalStatus()"
+                        class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-xl font-bold text-white focus:outline-none focus:border-indigo-500"
+                        placeholder="0"
+                    >
+                    <button onclick="clearModalValue()" id="uiModalClearBtn" class="px-3 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium shrink-0">
+                        Sıfırla
+                    </button>
+                </div>
+                <div id="quickButtonsContainer" class="flex flex-wrap gap-2 mt-3"></div>
+            </div>
+
+            <div id="modalLiveFeedback" class="p-3.5 rounded-xl text-xs font-medium border"></div>
+
+            <div class="flex items-center justify-end gap-2 pt-2">
+                <button onclick="closeEntryModal()" id="uiModalCancelBtn" class="px-4 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white">İptal</button>
+                <button onclick="saveEntryModal()" id="uiModalSaveBtn" class="px-5 py-2.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Yeni Hedef Ekleme Penceresi -->
+    <div id="addHabitModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 id="uiAddModalTitle" class="text-lg font-bold text-white">Yeni Akıllı Hedef Ekle</h3>
+                <button onclick="closeAddHabitModal()" class="text-slate-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="newHabitForm" class="space-y-4">
+                <div>
+                    <label id="uiAddNameLabel" class="block text-xs font-medium text-slate-300 mb-1">Hedef Adı</label>
+                    <input type="text" id="newHabitName" required placeholder="..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <div>
+                    <label id="uiAddModeLabel" class="block text-xs font-medium text-slate-300 mb-1">Takip Mantığı</label>
+                    <select id="newHabitMode" onchange="toggleNewHabitFields()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                        <option value="range" id="optRange">⚖️ İdeal Denge (Azı Eksik, Fazlası Zarar)</option>
+                        <option value="limit" id="optLimit">🚨 Üst Sınır / Limit (Aşılmaması Gereken)</option>
+                        <option value="min" id="optMin">🎯 En Az Hedefi (Ne Kadar Çok O Kadar İyi)</option>
+                        <option value="boolean" id="optBool">✅ Klasik Onay Kutusu (Yapıldı / Yapılmadı)</option>
+                    </select>
+                </div>
+
+                <div id="numericConfigFields" class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                    <div>
+                        <label id="uiAddUnitLabel" class="block text-xs font-medium text-slate-400 mb-1">Birim</label>
+                        <input type="text" id="newHabitUnit" value="L" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+                    </div>
+                    <div>
+                        <label id="labelTarget" class="block text-xs font-medium text-slate-400 mb-1">İdeal Alt Sınır</label>
+                        <input type="number" step="any" id="newHabitTarget" value="2.5" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+                    </div>
+                    <div id="maxLimitFieldWrapper">
+                        <label id="labelMax" class="block text-xs font-medium text-slate-400 mb-1">Üst Sınır (Maks)</label>
+                        <input type="number" step="any" id="newHabitMax" value="3.8" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+                    <button type="button" onclick="closeAddHabitModal()" id="uiAddCancelBtn" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white">Vazgeç</button>
+                    <button type="submit" id="uiAddSubmitBtn" class="px-5 py-2.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white">Ekle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
-        const DAYS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+        // --- ÇOK DİLLİ SÖZLÜK (TR, EN, DE, RU) ---
+        const I18N = {
+            tr: {
+                locale: 'tr-TR',
+                appTitle: 'Akıllı Yaşam & Hedef Koçu',
+                btnAddHabit: 'Yeni Hedef Ekle',
+                btnReset: 'Sıfırla',
+                card1Title: 'Bugün İdeal Hedefler',
+                card1Sub: (pct) => `Bugün %${pct} ideal denge`,
+                card2Title: 'Eksik / Az Kalanlar',
+                card2Unit: 'Hedef',
+                card2Sub: 'Bugün tamamlanması gereken',
+                card3Title: 'Limit Aşımı (Fazla)',
+                card3Unit: 'Kez',
+                card3SubWarn: (n) => `⚠️ Bugün ${n} hedefte sınır aşıldı!`,
+                card3SubOk: 'Bugün sınır aşımı yok',
+                card4Title: 'En İyi İdeal Seri',
+                card4Unit: 'Gün',
+                noStreak: 'Henüz seri yok',
+                coachTitle: 'Günlük Akıllı Analiz & Uyarı Raporu (Bugün)',
+                coachSub: 'Değerleri değiştirdikçe anlık güncellenir',
+                matrixTitle: 'Haftalık Hedef & Ölçüm Tablosu',
+                matrixSub: 'Kutucuklara tıklayarak o günün litresini, kalorisini veya saatini girebilirsin.',
+                legendIdeal: 'İdeal',
+                legendUnder: 'Az / Eksik',
+                legendOver: 'Fazla / Aşım!',
+                thHabit: 'Alışkanlık & Kural',
+                thStreak: 'Seri',
+                todayBadge: 'Bugün',
+                btnEnter: 'Gir',
+                shortIdeal: 'İdeal',
+                shortUnder: 'Az',
+                shortOver: 'Fazla!',
+                shortLow: 'Düşük',
+                shortGoal: 'Hedef ✓',
+                matrixFooterTip: '💡 Sayısal kutulara tıklayıp değer girin. Onay kutularına tek tıklama yeterlidir.',
+                matrixFooterToday: 'Mavi Çerçeveli Sütun = Bugün',
+                chartTitle: 'Haftalık Denge Grafiği',
+                chartSub: 'Günlük İdeal, Eksik ve Fazla Aşım dağılımı',
+                summaryTitle: 'Haftalık Ortalama & Durum',
+                avgPrefix: 'Ort',
+                noData: 'Veri yok',
+                daysDone: (n) => `${n}/7 gün tamamlandı`,
+                daysShort: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'],
+                daysFull: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'],
+                ruleBool: 'Günlük Onay (Yapıldı / Yapılmadı)',
+                ruleRange: (t, m, u) => `İdeal: ${t} - ${m} ${u}`,
+                ruleLimit: (m, u) => `Maks Sınır: ${m} ${u}`,
+                ruleMin: (t, u) => `Hedef: En az ${t} ${u}`,
+                reasonEmpty: (rule) => `Bugün için henüz veri girmedin (${rule}).`,
+                reasonBoolOk: 'Hedef başarıyla tamamlandı.',
+                reasonRangeUnder: (d, t, u) => `İdeal hedefin ${d} ${u} altında kaldın (Hedef: ${t} ${u}).`,
+                reasonRangeOver: (d, m, u) => `Üst sınırı ${d} ${u} aştın! Fazlası zararlı olabilir (Maks: ${m} ${u}).`,
+                reasonRangeIdeal: (t, m, u) => `Harika! ${t} - ${m} ${u} ideal aralığındasın.`,
+                reasonLimitOver: (d, m, u) => `Günlük ${m} ${u} sınırını ${d} ${u} aştın!`,
+                reasonLimitUnder: (t, u) => `Alt tabanın (${t} ${u}) altında kaldın.`,
+                reasonLimitIdeal: (m, l, u) => `Süper! ${m} ${u} sınırını aşmadın (${l} ${u} payın var).`,
+                reasonMinUnder: (d, u) => `Hedefe ulaşmak için ${d} ${u} daha gerekli.`,
+                reasonMinIdeal: (t, u) => `Tebrikler, günlük ${t} ${u} hedefini geçtin!`,
+                alertUnderSuffix: '(Eksik/Az)',
+                alertOverSuffix: '(Aşım Uyarısı!)',
+                modalInputLabel: 'Miktar / Değer Girin',
+                modalClear: 'Sıfırla',
+                modalCancel: 'İptal',
+                modalSave: 'Kaydet ve Güncelle',
+                modalPreviewEmpty: 'ℹ️ Değer girdiğinizde analiz burada görünecek.',
+                addModalTitle: 'Yeni Akıllı Hedef Ekle',
+                addNameLabel: 'Hedef Adı',
+                addModeLabel: 'Takip Mantığı',
+                optRange: '⚖️ İdeal Denge (Azı Eksik, Fazlası Zarar - Su, Uyku)',
+                optLimit: '🚨 Üst Sınır / Limit (Aşılmaması Gereken - Kalori)',
+                optMin: '🎯 En Az Hedefi (Kitap Sayfası, Adım)',
+                optBool: '✅ Klasik Onay Kutusu (Yapıldı / Yapılmadı)',
+                addUnitLabel: 'Birim',
+                labelMinGoal: 'Günlük En Az Hedef',
+                labelFloor: 'Alt Taban (Min)',
+                labelCap: 'Üst Sınır (Aşma!)',
+                labelIdealMin: 'İdeal Alt Sınır',
+                labelIdealMax: 'İdeal Üst Sınır',
+                confirmReset: 'Tüm tabloyu başlangıç ayarlarına sıfırlamak istediğine emin misin?',
+                defaultNames: {
+                    water: '💧 Günlük Su Tüketimi',
+                    calorie: '🔥 Kalori Kontrolü',
+                    sleep: '🌙 Uyku Düzeni',
+                    reading: '📖 Kitap & Ders Okuma',
+                    workout: '🏋️ Yüzme / Antrenman'
+                },
+                units: { L: 'L', kcal: 'kcal', hour: 'saat', page: 'syf' }
+            },
+            en: {
+                locale: 'en-US',
+                appTitle: 'Smart Habit & Life Coach',
+                btnAddHabit: 'Add New Goal',
+                btnReset: 'Reset',
+                card1Title: 'Ideal Goals Today',
+                card1Sub: (pct) => `${pct}% ideal balance today`,
+                card2Title: 'Under Target',
+                card2Unit: 'Goals',
+                card2Sub: 'Needs attention today',
+                card3Title: 'Limit Exceeded (Over)',
+                card3Unit: 'Times',
+                card3SubWarn: (n) => `⚠️ ${n} limit(s) exceeded today!`,
+                card3SubOk: 'No limits exceeded today',
+                card4Title: 'Best Ideal Streak',
+                card4Unit: 'Days',
+                noStreak: 'No active streak',
+                coachTitle: 'Daily Smart Analysis & Alert Report (Today)',
+                coachSub: 'Updates instantly as you log values',
+                matrixTitle: 'Weekly Goal & Measurement Matrix',
+                matrixSub: 'Click any cell to log your daily water, calories, or hours.',
+                legendIdeal: 'Ideal',
+                legendUnder: 'Low / Under',
+                legendOver: 'Over Limit!',
+                thHabit: 'Habit & Rule',
+                thStreak: 'Streak',
+                todayBadge: 'Today',
+                btnEnter: 'Log',
+                shortIdeal: 'Ideal',
+                shortUnder: 'Low',
+                shortOver: 'Over!',
+                shortLow: 'Low',
+                shortGoal: 'Goal ✓',
+                matrixFooterTip: '💡 Click numeric cells to enter values. Single click for checkboxes.',
+                matrixFooterToday: 'Blue Highlighted Column = Today',
+                chartTitle: 'Weekly Balance Chart',
+                chartSub: 'Daily breakdown of Ideal, Under, and Over Limit entries',
+                summaryTitle: 'Weekly Average & Status',
+                avgPrefix: 'Avg',
+                noData: 'No data',
+                daysDone: (n) => `${n}/7 days completed`,
+                daysShort: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                daysFull: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                ruleBool: 'Daily Check-in (Done / Not Done)',
+                ruleRange: (t, m, u) => `Ideal: ${t} - ${m} ${u}`,
+                ruleLimit: (m, u) => `Max Limit: ${m} ${u}`,
+                ruleMin: (t, u) => `Goal: At least ${t} ${u}`,
+                reasonEmpty: (rule) => `No data logged for today yet (${rule}).`,
+                reasonBoolOk: 'Goal completed successfully.',
+                reasonRangeUnder: (d, t, u) => `You are ${d} ${u} below your ideal target (${t} ${u}).`,
+                reasonRangeOver: (d, m, u) => `Exceeded upper limit by ${d} ${u}! Too much can be harmful (Max: ${m} ${u}).`,
+                reasonRangeIdeal: (t, m, u) => `Great job! Within ideal range (${t} - ${m} ${u}).`,
+                reasonLimitOver: (d, m, u) => `Exceeded daily ${m} ${u} limit by ${d} ${u}!`,
+                reasonLimitUnder: (t, u) => `Below minimum baseline (${t} ${u}).`,
+                reasonLimitIdeal: (m, l, u) => `Awesome! Within ${m} ${u} limit (${l} ${u} remaining).`,
+                reasonMinUnder: (d, u) => `${d} ${u} more needed to reach daily target.`,
+                reasonMinIdeal: (t, u) => `Congrats, you beat your ${t} ${u} daily goal!`,
+                alertUnderSuffix: '(Under Target)',
+                alertOverSuffix: '(Limit Exceeded!)',
+                modalInputLabel: 'Enter Amount / Value',
+                modalClear: 'Clear',
+                modalCancel: 'Cancel',
+                modalSave: 'Save & Update',
+                modalPreviewEmpty: 'ℹ️ Enter a value to see instant status analysis.',
+                addModalTitle: 'Add New Smart Goal',
+                addNameLabel: 'Goal Name',
+                addModeLabel: 'Tracking Mode',
+                optRange: '⚖️ Ideal Balance (Too little or too much is bad - Water, Sleep)',
+                optLimit: '🚨 Upper Limit (Do not exceed - Calories, Spending)',
+                optMin: '🎯 Minimum Target (More is better - Reading, Steps)',
+                optBool: '✅ Classic Checkbox (Done / Not Done)',
+                addUnitLabel: 'Unit',
+                labelMinGoal: 'Daily Min Target',
+                labelFloor: 'Min Baseline',
+                labelCap: 'Max Limit (Cap)',
+                labelIdealMin: 'Ideal Min',
+                labelIdealMax: 'Ideal Max',
+                confirmReset: 'Are you sure you want to reset the week to default settings?',
+                defaultNames: {
+                    water: '💧 Daily Water Intake',
+                    calorie: '🔥 Calorie Control',
+                    sleep: '🌙 Sleep Schedule',
+                    reading: '📖 Reading & Study',
+                    workout: '🏋️ Swimming / Workout'
+                },
+                units: { L: 'L', kcal: 'kcal', hour: 'hrs', page: 'pgs' }
+            },
+            de: {
+                locale: 'de-DE',
+                appTitle: 'Smart Gewohnheits- & Life-Coach',
+                btnAddHabit: 'Neues Ziel',
+                btnReset: 'Zurücksetzen',
+                card1Title: 'Ideale Ziele Heute',
+                card1Sub: (pct) => `Heute ${pct}% ideale Balance`,
+                card2Title: 'Zu Wenig / Offen',
+                card2Unit: 'Ziele',
+                card2Sub: 'Heute noch zu erledigen',
+                card3Title: 'Limit Überschritten',
+                card3Unit: 'Mal',
+                card3SubWarn: (n) => `⚠️ Heute bei ${n} Ziel(en) Limit überschritten!`,
+                card3SubOk: 'Heute kein Limit überschritten',
+                card4Title: 'Beste Ideal-Serie',
+                card4Unit: 'Tage',
+                noStreak: 'Noch keine Serie',
+                coachTitle: 'Tägliche Smart-Analyse & Warnbericht (Heute)',
+                coachSub: 'Aktualisiert sich sofort bei Eingabe',
+                matrixTitle: 'Wöchentliche Ziel- & Messtabelle',
+                matrixSub: 'Klicke auf ein Feld, um Wasser, Kalorien oder Stunden einzutragen.',
+                legendIdeal: 'Ideal',
+                legendUnder: 'Zu wenig',
+                legendOver: 'Zu viel / Limit!',
+                thHabit: 'Gewohnheit & Regel',
+                thStreak: 'Serie',
+                todayBadge: 'Heute',
+                btnEnter: 'Eingabe',
+                shortIdeal: 'Ideal',
+                shortUnder: 'Wenig',
+                shortOver: 'Über!',
+                shortLow: 'Niedrig',
+                shortGoal: 'Ziel ✓',
+                matrixFooterTip: '💡 Klicke auf Zahlenfelder zur Werteingabe. Einfacher Klick für Häkchen.',
+                matrixFooterToday: 'Blaue Spalte = Heute',
+                chartTitle: 'Wöchentliches Balance-Diagramm',
+                chartSub: 'Tägliche Verteilung von Ideal, Zu wenig und Überschreitung',
+                summaryTitle: 'Wochendurchschnitt & Status',
+                avgPrefix: 'Ø',
+                noData: 'Keine Daten',
+                daysDone: (n) => `${n}/7 Tage erledigt`,
+                daysShort: ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'],
+                daysFull: ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'],
+                ruleBool: 'Tägliches Abhaken (Erledigt / Offen)',
+                ruleRange: (t, m, u) => `Ideal: ${t} - ${m} ${u}`,
+                ruleLimit: (m, u) => `Max Limit: ${m} ${u}`,
+                ruleMin: (t, u) => `Ziel: Mind. ${t} ${u}`,
+                reasonEmpty: (rule) => `Heute noch keine Daten eingetragen (${rule}).`,
+                reasonBoolOk: 'Ziel erfolgreich erledigt.',
+                reasonRangeUnder: (d, t, u) => `${d} ${u} unter dem Idealziel (Ziel: ${t} ${u}).`,
+                reasonRangeOver: (d, m, u) => `Obergrenze um ${d} ${u} überschritten! (Max: ${m} ${u}).`,
+                reasonRangeIdeal: (t, m, u) => `Super! Im idealen Bereich (${t} - ${m} ${u}).`,
+                reasonLimitOver: (d, m, u) => `Tageslimit von ${m} ${u} um ${d} ${u} überschritten!`,
+                reasonLimitUnder: (t, u) => `Unter dem Mindestwert (${t} ${u}).`,
+                reasonLimitIdeal: (m, l, u) => `Perfekt! Unter ${m} ${u} geblieben (${l} ${u} übrig).`,
+                reasonMinUnder: (d, u) => `Noch ${d} ${u} bis zum Tagesziel.`,
+                reasonMinIdeal: (t, u) => `Klasse, Tagesziel von ${t} ${u} erreicht!`,
+                alertUnderSuffix: '(Zu wenig)',
+                alertOverSuffix: '(Limit überschritten!)',
+                modalInputLabel: 'Menge / Wert eingeben',
+                modalClear: 'Leeren',
+                modalCancel: 'Abbrechen',
+                modalSave: 'Speichern',
+                modalPreviewEmpty: 'ℹ️ Wert eingeben, um die Analyse zu sehen.',
+                addModalTitle: 'Neues Smart-Ziel hinzufügen',
+                addNameLabel: 'Zielname',
+                addModeLabel: 'Tracking-Modus',
+                optRange: '⚖️ Ideale Balance (Zu wenig/viel schadet - Wasser, Schlaf)',
+                optLimit: '🚨 Obergrenze / Limit (Nicht überschreiten - Kalorien)',
+                optMin: '🎯 Mindestziel (Mehr ist besser - Lesen, Schritte)',
+                optBool: '✅ Klassische Checkbox (Erledigt / Nicht erledigt)',
+                addUnitLabel: 'Einheit',
+                labelMinGoal: 'Tägliches Mindestziel',
+                labelFloor: 'Minimum',
+                labelCap: 'Obergrenze (Max)',
+                labelIdealMin: 'Ideal Min',
+                labelIdealMax: 'Ideal Max',
+                confirmReset: 'Möchtest du die Woche wirklich zurücksetzen?',
+                defaultNames: {
+                    water: '💧 Täglicher Wasserkonsum',
+                    calorie: '🔥 Kalorienkontrolle',
+                    sleep: '🌙 Schlafrhythmus',
+                    reading: '📖 Lesen & Lernen',
+                    workout: '🏋️ Schwimmen / Training'
+                },
+                units: { L: 'L', kcal: 'kcal', hour: 'Std', page: 'S.' }
+            },
+            ru: {
+                locale: 'ru-RU',
+                appTitle: 'Умный Коуч Привычек и Целей',
+                btnAddHabit: 'Добавить цель',
+                btnReset: 'Сброс',
+                card1Title: 'Идеально сегодня',
+                card1Sub: (pct) => `${pct}% идеального баланса`,
+                card2Title: 'Недостаточно / Мало',
+                card2Unit: 'Целей',
+                card2Sub: 'Нужно добрать сегодня',
+                card3Title: 'Превышение лимита',
+                card3Unit: 'раз(а)',
+                card3SubWarn: (n) => `⚠️ Сегодня превышен лимит по ${n} целям!`,
+                card3SubOk: 'Сегодня без превышений',
+                card4Title: 'Лучшая серия',
+                card4Unit: 'дн.',
+                noStreak: 'Нет активной серии',
+                coachTitle: 'Умный анализ и уведомления за день (Сегодня)',
+                coachSub: 'Обновляется мгновенно при вводе данных',
+                matrixTitle: 'Таблица целей и замеров на неделю',
+                matrixSub: 'Нажмите на ячейку, чтобы ввести литры, калории или часы.',
+                legendIdeal: 'Идеал',
+                legendUnder: 'Мало',
+                legendOver: 'Перебор!',
+                thHabit: 'Привычка и правило',
+                thStreak: 'Серия',
+                todayBadge: 'Сегодня',
+                btnEnter: 'Ввод',
+                shortIdeal: 'Норма',
+                shortUnder: 'Мало',
+                shortOver: 'Перебор!',
+                shortLow: 'Низко',
+                shortGoal: 'Цель ✓',
+                matrixFooterTip: '💡 Нажмите на ячейку для ввода числа или отметки галочкой.',
+                matrixFooterToday: 'Синяя колонка = Сегодня',
+                chartTitle: 'График баланса за неделю',
+                chartSub: 'Распределение: Идеал, Недобор и Перебор по дням',
+                summaryTitle: 'Среднее за неделю и статус',
+                avgPrefix: 'Сред',
+                noData: 'Нет данных',
+                daysDone: (n) => `${n}/7 дн. выполнено`,
+                daysShort: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+                daysFull: ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'],
+                ruleBool: 'Ежедневная отметка ( Да / Нет )',
+                ruleRange: (t, m, u) => `Норма: ${t} - ${m} ${u}`,
+                ruleLimit: (m, u) => `Макс. лимит: ${m} ${u}`,
+                ruleMin: (t, u) => `Цель: от ${t} ${u}`,
+                reasonEmpty: (rule) => `Нет данных за сегодня (${rule}).`,
+                reasonBoolOk: 'Цель успешно выполнена.',
+                reasonRangeUnder: (d, t, u) => `Ниже нормы на ${d} ${u} (Цель: ${t} ${u}).`,
+                reasonRangeOver: (d, m, u) => `Лимит превышен на ${d} ${u}! Избыток вреден (Макс: ${m} ${u}).`,
+                reasonRangeIdeal: (t, m, u) => `Отлично! Вы в идеальном коридоре (${t} - ${m} ${u}).`,
+                reasonLimitOver: (d, m, u) => `Дневной лимит ${m} ${u} превышен на ${d} ${u}!`,
+                reasonLimitUnder: (t, u) => `Ниже минимального порога (${t} ${u}).`,
+                reasonLimitIdeal: (m, l, u) => `Супер! Лимит ${m} ${u} не превышен (запас: ${l} ${u}).`,
+                reasonMinUnder: (d, u) => `Осталось еще ${d} ${u} до дневной цели.`,
+                reasonMinIdeal: (t, u) => `Поздравляем, дневная цель ${t} ${u} выполнена!`,
+                alertUnderSuffix: '(Недобор)',
+                alertOverSuffix: '(Перебор!)',
+                modalInputLabel: 'Введите значение',
+                modalClear: 'Очистить',
+                modalCancel: 'Отмена',
+                modalSave: 'Сохранить',
+                modalPreviewEmpty: 'ℹ️ Введите значение для анализа.',
+                addModalTitle: 'Добавить новую цель',
+                addNameLabel: 'Название цели',
+                addModeLabel: 'Режим отслеживания',
+                optRange: '⚖️ Идеальный баланс (Вода, Сон)',
+                optLimit: '🚨 Верхний лимит (Не превышать - Калории)',
+                optMin: '🎯 Минимум в день (Книги, Шаги)',
+                optBool: '✅ Обычная галочка (Сделано / Нет)',
+                addUnitLabel: 'Ед. изм.',
+                labelMinGoal: 'Минимум в день',
+                labelFloor: 'Мин. порог',
+                labelCap: 'Макс. лимит',
+                labelIdealMin: 'Идеал от',
+                labelIdealMax: 'Идеал до',
+                confirmReset: 'Сбросить все данные недели к начальным настройкам?',
+                defaultNames: {
+                    water: '💧 Водный баланс',
+                    calorie: '🔥 Контроль калорий',
+                    sleep: '🌙 Режим сна',
+                    reading: '📖 Чтение и учеба',
+                    workout: '🏋️ Плавание / Тренировка'
+                },
+                units: { L: 'л', kcal: 'ккал', hour: 'ч', page: 'стр' }
+            }
+        };
+
+        // --- OTOMATİK DİL VE BÖLGE ALGILAMA ---
+        function detectInitialLanguage() {
+            const saved = localStorage.getItem('habitTrackerLang_v3');
+            if (saved && I18N[saved]) return saved;
+
+            const browserLang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+            if (browserLang.startsWith('tr')) return 'tr';
+            if (browserLang.startsWith('de')) return 'de';
+            if (browserLang.startsWith('ru')) return 'ru';
+
+            // Saat dilimine göre ek konum kontrolü
+            try {
+                const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+                if (tz.includes('Istanbul')) return 'tr';
+                if (tz.includes('Berlin') || tz.includes('Vienna') || tz.includes('Zurich')) return 'de';
+                if (tz.includes('Moscow')) return 'ru';
+            } catch (e) {}
+
+            return 'en'; // Diğer tüm ülkeler için varsayılan İngilizce
+        }
+
+        let currentLang = detectInitialLanguage();
         const todayIndex = (new Date().getDay() + 6) % 7;
 
         const defaultHabits = [
-            { id: 1, name: 'Yüzme / Antrenman', days: [true, false, true, true, false, false, false] },
-            { id: 2, name: 'Günün Ders & Not Tekrarı', days: [true, true, true, true, false, false, false] },
-            { id: 3, name: 'Kodlama & Proje Pratiği', days: [false, true, true, true, false, false, false] },
-            { id: 4, name: '2.5 Litre Su Tüketimi', days: [true, true, true, true, false, false, false] }
+            { id: 1, nameKey: 'water', mode: 'range', unitKey: 'L', target: 2.5, max: 3.8, stepButtons: [0.25, 0.5, 1], values: [2.5, 1.8, 2.7, null, null, null, null] },
+            { id: 2, nameKey: 'calorie', mode: 'limit', unitKey: 'kcal', target: 1500, max: 2000, stepButtons: [250, 500, 100], values: [1950, 2450, 1850, null, null, null, null] },
+            { id: 3, nameKey: 'sleep', mode: 'range', unitKey: 'hour', target: 7, max: 9, stepButtons: [1, 0.5, 7.5], values: [7.5, 5.5, 8, null, null, null, null] },
+            { id: 4, nameKey: 'reading', mode: 'min', unitKey: 'page', target: 30, max: 999, stepButtons: [10, 20, 30], values: [35, 15, 40, null, null, null, null] },
+            { id: 5, nameKey: 'workout', mode: 'boolean', unitKey: '', target: 1, max: 1, stepButtons: [], values: [1, 0, 1, null, null, null, null] }
         ];
 
-        let habits = JSON.parse(localStorage.getItem('habitTrackerData_v1')) || defaultHabits;
+        let habits = JSON.parse(localStorage.getItem('habitTrackerData_v3')) || defaultHabits;
         let chartInstance = null;
+        let activeModalHabitId = null;
+        let activeModalDayIdx = null;
 
-        function saveData() {
-            localStorage.setItem('habitTrackerData_v1', JSON.stringify(habits));
+        function t() { return I18N[currentLang]; }
+
+        function getHabitName(h) {
+            if (h.nameKey && t().defaultNames[h.nameKey]) return t().defaultNames[h.nameKey];
+            return h.name || '';
         }
 
-        function calculateStreak(daysArray) {
+        function getHabitUnit(h) {
+            if (h.mode === 'boolean') return '';
+            if (h.unitKey && t().units[h.unitKey]) return t().units[h.unitKey];
+            return h.unit || '';
+        }
+
+        function saveData() {
+            localStorage.setItem('habitTrackerData_v3', JSON.stringify(habits));
+        }
+
+        function changeLanguage(langCode) {
+            if (!I18N[langCode]) return;
+            currentLang = langCode;
+            localStorage.setItem('habitTrackerLang_v3', langCode);
+            document.documentElement.lang = langCode;
+            applyStaticTranslations();
+            renderHeader();
+            renderTable();
+            updateSmartAlertsAndStats();
+        }
+
+        function applyStaticTranslations() {
+            const L = t();
+            document.getElementById('langSelector').value = currentLang;
+            document.getElementById('uiAppTitle').textContent = L.appTitle;
+            document.getElementById('uiBtnAddHabit').textContent = L.btnAddHabit;
+            document.getElementById('uiBtnReset').textContent = L.btnReset;
+            document.getElementById('uiCard1Title').textContent = L.card1Title;
+            document.getElementById('uiCard2Title').textContent = L.card2Title;
+            document.getElementById('uiCard2Sub').textContent = L.card2Sub;
+            document.getElementById('uiCard3Title').textContent = L.card3Title;
+            document.getElementById('uiCard4Title').textContent = L.card4Title;
+            document.getElementById('uiCoachTitle').textContent = L.coachTitle;
+            document.getElementById('uiCoachSub').textContent = L.coachSub;
+            document.getElementById('uiMatrixTitle').textContent = L.matrixTitle;
+            document.getElementById('uiMatrixSub').textContent = L.matrixSub;
+            document.getElementById('uiLegendIdeal').textContent = L.legendIdeal;
+            document.getElementById('uiLegendUnder').textContent = L.legendUnder;
+            document.getElementById('uiLegendOver').textContent = L.legendOver;
+            document.getElementById('uiMatrixFooterTip').textContent = L.matrixFooterTip;
+            document.getElementById('uiMatrixFooterToday').textContent = L.matrixFooterToday;
+            document.getElementById('uiChartTitle').textContent = L.chartTitle;
+            document.getElementById('uiChartSub').textContent = L.chartSub;
+            document.getElementById('uiSummaryTitle').textContent = L.summaryTitle;
+            document.getElementById('uiModalInputLabel').textContent = L.modalInputLabel;
+            document.getElementById('uiModalClearBtn').textContent = L.modalClear;
+            document.getElementById('uiModalCancelBtn').textContent = L.modalCancel;
+            document.getElementById('uiModalSaveBtn').textContent = L.modalSave;
+            document.getElementById('uiAddModalTitle').textContent = L.addModalTitle;
+            document.getElementById('uiAddNameLabel').textContent = L.addNameLabel;
+            document.getElementById('uiAddModeLabel').textContent = L.addModeLabel;
+            document.getElementById('optRange').textContent = L.optRange;
+            document.getElementById('optLimit').textContent = L.optLimit;
+            document.getElementById('optMin').textContent = L.optMin;
+            document.getElementById('optBool').textContent = L.optBool;
+            document.getElementById('uiAddUnitLabel').textContent = L.addUnitLabel;
+            document.getElementById('uiAddCancelBtn').textContent = L.modalCancel;
+            document.getElementById('uiAddSubmitBtn').textContent = L.btnAddHabit;
+        }
+
+        function getHabitRuleSummary(habit) {
+            const L = t();
+            const u = getHabitUnit(habit);
+            if (habit.mode === 'boolean') return L.ruleBool;
+            if (habit.mode === 'range') return L.ruleRange(habit.target, habit.max, u);
+            if (habit.mode === 'limit') return L.ruleLimit(habit.max, u);
+            if (habit.mode === 'min') return L.ruleMin(habit.target, u);
+            return '';
+        }
+
+        function evaluateEntry(habit, val) {
+            const L = t();
+            const u = getHabitUnit(habit);
+            const rule = getHabitRuleSummary(habit);
+
+            if (val === null || val === undefined || val === '') {
+                return { status: 'empty', shortText: '', reason: L.reasonEmpty(rule) };
+            }
+            const num = Number(val);
+
+            if (habit.mode === 'boolean') {
+                if (num === 1) return { status: 'ideal', shortText: '✓', reason: L.reasonBoolOk };
+                return { status: 'empty', shortText: '', reason: L.reasonEmpty(rule) };
+            }
+
+            if (num <= 0) return { status: 'empty', shortText: '', reason: L.reasonEmpty(rule) };
+
+            if (habit.mode === 'range') {
+                if (num < habit.target) {
+                    const diff = +(habit.target - num).toFixed(2);
+                    return { status: 'under', shortText: L.shortUnder, reason: L.reasonRangeUnder(diff, habit.target, u) };
+                } else if (num > habit.max) {
+                    const diff = +(num - habit.max).toFixed(2);
+                    return { status: 'over', shortText: L.shortOver, reason: L.reasonRangeOver(diff, habit.max, u) };
+                } else {
+                    return { status: 'ideal', shortText: L.shortIdeal, reason: L.reasonRangeIdeal(habit.target, habit.max, u) };
+                }
+            }
+
+            if (habit.mode === 'limit') {
+                if (num > habit.max) {
+                    const diff = +(num - habit.max).toFixed(0);
+                    return { status: 'over', shortText: `+${diff}`, reason: L.reasonLimitOver(diff, habit.max, u) };
+                } else if (num < habit.target) {
+                    return { status: 'under', shortText: L.shortLow, reason: L.reasonLimitUnder(habit.target, u) };
+                } else {
+                    const left = +(habit.max - num).toFixed(0);
+                    return { status: 'ideal', shortText: L.shortIdeal, reason: L.reasonLimitIdeal(habit.max, left, u) };
+                }
+            }
+
+            if (habit.mode === 'min') {
+                if (num < habit.target) {
+                    const diff = +(habit.target - num).toFixed(1);
+                    return { status: 'under', shortText: L.shortUnder, reason: L.reasonMinUnder(diff, u) };
+                } else {
+                    return { status: 'ideal', shortText: L.shortGoal, reason: L.reasonMinIdeal(habit.target, u) };
+                }
+            }
+
+            return { status: 'empty', shortText: '', reason: '' };
+        }
+
+        function calculateIdealStreak(habit) {
             let streak = 0;
-            let startIdx = daysArray[todayIndex] ? todayIndex : todayIndex - 1;
+            const todayEval = evaluateEntry(habit, habit.values[todayIndex]);
+            let startIdx = todayEval.status === 'ideal' ? todayIndex : todayIndex - 1;
             for (let i = startIdx; i >= 0; i--) {
-                if (daysArray[i]) streak++;
+                if (evaluateEntry(habit, habit.values[i]).status === 'ideal') streak++;
                 else break;
             }
             return streak;
         }
 
         function renderHeader() {
+            const L = t();
             const now = new Date();
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            document.getElementById('currentDateText').textContent = now.toLocaleDateString('tr-TR', options);
+            document.getElementById('currentDateText').textContent = now.toLocaleDateString(L.locale, options);
 
             const headerRow = document.getElementById('tableHeaderRow');
-            headerRow.innerHTML = `<th class="py-3 pr-4">Alışkanlık</th>`;
+            headerRow.innerHTML = `<th class="py-3 pr-4">${L.thHabit}</th>`;
             
-            DAYS.forEach((day, idx) => {
+            L.daysShort.forEach((day, idx) => {
                 const isToday = idx === todayIndex;
                 headerRow.innerHTML += `
-                    <th class="py-3 px-2 text-center ${isToday ? 'text-indigo-400 font-bold' : ''}">
+                    <th class="py-3 px-1.5 text-center ${isToday ? 'text-indigo-400 font-bold' : ''}">
                         <div class="flex flex-col items-center">
                             <span>${day}</span>
-                            ${isToday ? '<span class="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1"></span>' : ''}
+                            ${isToday ? `<span class="text-[10px] px-1.5 py-0.2 bg-indigo-500/20 text-indigo-300 rounded mt-0.5">${L.todayBadge}</span>` : ''}
                         </div>
                     </th>
                 `;
             });
-            headerRow.innerHTML += `<th class="py-3 pl-3 text-center">Seri</th><th class="py-3 pl-2 text-right"></th>`;
+            headerRow.innerHTML += `<th class="py-3 pl-2 text-center">${L.thStreak}</th><th class="py-3 pl-1 text-right"></th>`;
         }
 
         function renderTable() {
+            const L = t();
             const tbody = document.getElementById('habitListBody');
             tbody.innerHTML = '';
 
-            if (habits.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="10" class="text-center py-8 text-slate-500">Henüz bir alışkanlık eklenmedi. Yukarıdan yeni bir hedef ekleyebilirsin.</td></tr>`;
-                return;
-            }
-
             habits.forEach(habit => {
-                const streak = calculateStreak(habit.days);
+                const streak = calculateIdealStreak(habit);
+                const hName = getHabitName(habit);
+                const hUnit = getHabitUnit(habit);
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-slate-800/30 transition group';
 
-                let daysHtml = '';
-                habit.days.forEach((done, dayIdx) => {
+                let cellsHtml = '';
+                habit.values.forEach((val, dayIdx) => {
                     const isToday = dayIdx === todayIndex;
-                    daysHtml += `
-                        <td class="py-3.5 px-2 text-center ${isToday ? 'bg-indigo-500/5' : ''}">
-                            <button 
-                                onclick="toggleDay(${habit.id}, ${dayIdx})"
-                                class="check-btn w-8 h-8 rounded-lg inline-flex items-center justify-center border ${
-                                    done 
-                                    ? 'bg-emerald-500 border-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20' 
-                                    : isToday 
-                                        ? 'border-indigo-500/50 bg-slate-900/60 hover:border-indigo-400 text-transparent'
-                                        : 'border-slate-700 bg-slate-900/40 hover:border-slate-600 text-transparent'
-                                }"
-                            >
-                                <i data-lucide="check" class="w-4 h-4 stroke-[3]"></i>
-                            </button>
-                        </td>
-                    `;
+                    const ev = evaluateEntry(habit, val);
+
+                    let badgeStyle = 'border-slate-700/80 bg-slate-900/50 text-slate-500 hover:border-slate-500';
+                    if (isToday && ev.status === 'empty') {
+                        badgeStyle = 'border-indigo-500/60 bg-indigo-950/20 text-indigo-300 hover:border-indigo-400';
+                    } else if (ev.status === 'ideal') {
+                        badgeStyle = 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-sm shadow-emerald-500/10';
+                    } else if (ev.status === 'under') {
+                        badgeStyle = 'bg-amber-500/20 border-amber-500/50 text-amber-300';
+                    } else if (ev.status === 'over') {
+                        badgeStyle = 'bg-rose-500/25 border-rose-500/60 text-rose-300 shadow-sm shadow-rose-500/15';
+                    }
+
+                    if (habit.mode === 'boolean') {
+                        cellsHtml += `
+                            <td class="py-3 px-1.5 text-center ${isToday ? 'bg-indigo-500/5' : ''}">
+                                <button onclick="handleCellClick(${habit.id}, ${dayIdx})" title="${ev.reason}" class="cell-btn w-14 h-11 rounded-xl border inline-flex flex-col items-center justify-center ${badgeStyle}">
+                                    ${ev.status === 'ideal' ? '<i data-lucide="check" class="w-5 h-5 stroke-[3] text-emerald-400"></i>' : '<span class="text-xs opacity-40">+</span>'}
+                                </button>
+                            </td>
+                        `;
+                    } else {
+                        const unitCompact = (hUnit === 'kcal' || hUnit === 'ккал') ? '' : ` ${hUnit}`;
+                        cellsHtml += `
+                            <td class="py-3 px-1.5 text-center ${isToday ? 'bg-indigo-500/5' : ''}">
+                                <button onclick="handleCellClick(${habit.id}, ${dayIdx})" title="${ev.reason}" class="cell-btn w-16 h-12 rounded-xl border inline-flex flex-col items-center justify-center px-1 ${badgeStyle}">
+                                    ${ev.status === 'empty' 
+                                        ? `<span class="text-xs opacity-50">${L.btnEnter}</span>` 
+                                        : `<span class="text-xs font-bold leading-tight">${val}${unitCompact}</span>
+                                           <span class="text-[10px] opacity-85 leading-tight mt-0.5">${ev.shortText}</span>`
+                                    }
+                                </button>
+                            </td>
+                        `;
+                    }
                 });
 
                 tr.innerHTML = `
-                    <td class="py-3.5 pr-4 font-medium text-slate-200">${habit.name}</td>
-                    ${daysHtml}
-                    <td class="py-3.5 pl-3 text-center">
+                    <td class="py-3 pr-3">
+                        <div class="font-semibold text-slate-100">${hName}</div>
+                        <div class="text-xs text-slate-400 mt-0.5">${getHabitRuleSummary(habit)}</div>
+                    </td>
+                    ${cellsHtml}
+                    <td class="py-3 pl-2 text-center">
                         <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                            streak > 0 ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' : 'bg-slate-800 text-slate-500'
+                            streak > 0 ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500'
                         }">
                             🔥 ${streak}
                         </span>
                     </td>
-                    <td class="py-3.5 pl-2 text-right">
-                        <button onclick="deleteHabit(${habit.id})" class="text-slate-600 hover:text-rose-400 p-1 rounded-lg transition opacity-0 group-hover:opacity-100" title="Sil">
+                    <td class="py-3 pl-1 text-right">
+                        <button onclick="deleteHabit(${habit.id})" class="text-slate-600 hover:text-rose-400 p-1.5 rounded-lg transition opacity-0 group-hover:opacity-100">
                             <i data-lucide="trash-2" class="w-4 h-4"></i>
                         </button>
                     </td>
@@ -235,159 +896,373 @@
             lucide.createIcons();
         }
 
-        function updateStatsAndChart() {
-            const totalHabits = habits.length;
-            
-            let todayCompleted = 0;
-            habits.forEach(h => { if (h.days[todayIndex]) todayCompleted++; });
-            const todayPercent = totalHabits > 0 ? Math.round((todayCompleted / totalHabits) * 100) : 0;
-            
-            document.getElementById('todayProgressText').textContent = `${todayPercent}%`;
-            document.getElementById('todayCountText').textContent = `${todayCompleted} / ${totalHabits} hedef tamamlandı`;
+        function updateSmartAlertsAndStats() {
+            const L = t();
+            let todayIdeal = 0, todayUnder = 0, todayOver = 0, weekOverTotal = 0;
+            const alerts = [];
 
-            let maxStreak = 0;
-            let bestHabitName = 'Henüz seri yok';
-            habits.forEach(h => {
-                const s = calculateStreak(h.days);
-                if (s > maxStreak) {
-                    maxStreak = s;
-                    bestHabitName = h.name;
+            habits.forEach(habit => {
+                const hName = getHabitName(habit);
+                const todayEv = evaluateEntry(habit, habit.values[todayIndex]);
+                if (todayEv.status === 'ideal') {
+                    todayIdeal++;
+                    alerts.push({ type: 'ideal', title: hName, text: todayEv.reason });
+                } else if (todayEv.status === 'under') {
+                    todayUnder++;
+                    alerts.push({ type: 'under', title: `${hName} ${L.alertUnderSuffix}`, text: todayEv.reason });
+                } else if (todayEv.status === 'over') {
+                    todayOver++;
+                    alerts.push({ type: 'over', title: `${hName} ${L.alertOverSuffix}`, text: todayEv.reason });
+                } else {
+                    alerts.push({ type: 'empty', title: hName, text: todayEv.reason });
                 }
-            });
-            document.getElementById('bestStreakText').textContent = `${maxStreak} Gün`;
-            document.getElementById('bestStreakHabit').textContent = maxStreak > 0 ? bestHabitName : 'Bugün bir hedef tamamla!';
 
-            let weeklyCompleted = 0;
-            const dailyCounts = [0, 0, 0, 0, 0, 0, 0];
-            habits.forEach(h => {
-                h.days.forEach((done, idx) => {
-                    if (done) {
-                        weeklyCompleted++;
-                        dailyCounts[idx]++;
-                    }
+                habit.values.forEach(v => {
+                    if (evaluateEntry(habit, v).status === 'over') weekOverTotal++;
                 });
             });
-            const totalPossible = totalHabits * 7;
-            const weeklyRate = totalPossible > 0 ? Math.round((weeklyCompleted / totalPossible) * 100) : 0;
-            document.getElementById('weeklyRateText').textContent = `${weeklyRate}%`;
-            document.getElementById('weeklyTotalText').textContent = `Haftalık ${weeklyCompleted} / ${totalPossible} görev`;
 
-            const streakListEl = document.getElementById('streakProgressList');
-            streakListEl.innerHTML = '';
+            const totalHabits = habits.length;
+            const todayPct = totalHabits > 0 ? Math.round((todayIdeal / totalHabits) * 100) : 0;
+
+            document.getElementById('statTodayIdeal').textContent = `${todayIdeal} / ${totalHabits}`;
+            document.getElementById('statTodayPct').textContent = L.card1Sub(todayPct);
+            document.getElementById('statTodayUnder').textContent = `${todayUnder} ${L.card2Unit}`;
+            document.getElementById('statWeekOver').textContent = `${weekOverTotal} ${L.card3Unit}`;
+            document.getElementById('statTodayOverText').textContent = todayOver > 0 ? L.card3SubWarn(todayOver) : L.card3SubOk;
+
+            let bestStreak = 0;
+            let bestName = L.noStreak;
             habits.forEach(h => {
-                const completedDays = h.days.filter(Boolean).length;
-                const pct = Math.round((completedDays / 7) * 100);
-                streakListEl.innerHTML += `
-                    <div>
-                        <div class="flex justify-between text-xs mb-1">
-                            <span class="text-slate-300 font-medium truncate pr-2">${h.name}</span>
-                            <span class="text-slate-400 shrink-0">${completedDays}/7 gün (%${pct})</span>
-                        </div>
-                        <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                            <div class="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 rounded-full transition-all duration-300" style="width: ${pct}%"></div>
+                const s = calculateIdealStreak(h);
+                if (s > bestStreak) {
+                    bestStreak = s;
+                    bestName = getHabitName(h);
+                }
+            });
+            document.getElementById('statBestStreak').textContent = `${bestStreak} ${L.card4Unit}`;
+            document.getElementById('statBestStreakName').textContent = bestName;
+
+            const orderWeight = { over: 1, under: 2, empty: 3, ideal: 4 };
+            alerts.sort((a, b) => orderWeight[a.type] - orderWeight[b.type]);
+
+            const alertContainer = document.getElementById('smartAlertsContainer');
+            alertContainer.innerHTML = '';
+
+            alerts.forEach(item => {
+                let boxClass = 'bg-slate-900/70 border-slate-800 text-slate-300';
+                let iconName = 'info';
+                let iconColor = 'text-slate-400';
+
+                if (item.type === 'over') {
+                    boxClass = 'bg-rose-500/10 border-rose-500/30 text-rose-200';
+                    iconName = 'triangle-alert';
+                    iconColor = 'text-rose-400';
+                } else if (item.type === 'under') {
+                    boxClass = 'bg-amber-500/10 border-amber-500/30 text-amber-200';
+                    iconName = 'trending-down';
+                    iconColor = 'text-amber-400';
+                } else if (item.type === 'ideal') {
+                    boxClass = 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200';
+                    iconName = 'check-circle';
+                    iconColor = 'text-emerald-400';
+                }
+
+                alertContainer.innerHTML += `
+                    <div class="p-3.5 rounded-xl border ${boxClass} flex items-start gap-3">
+                        <i data-lucide="${iconName}" class="w-5 h-5 ${iconColor} shrink-0 mt-0.5"></i>
+                        <div>
+                            <div class="text-xs font-bold">${item.title}</div>
+                            <div class="text-xs opacity-90 mt-0.5 leading-relaxed">${item.text}</div>
                         </div>
                     </div>
                 `;
             });
 
+            const summaryList = document.getElementById('weeklySummaryList');
+            summaryList.innerHTML = '';
+
+            habits.forEach(h => {
+                let idealCount = 0, underCount = 0, overCount = 0, sum = 0, filledCount = 0;
+                const hName = getHabitName(h);
+                const hUnit = getHabitUnit(h);
+
+                h.values.forEach(v => {
+                    const ev = evaluateEntry(h, v);
+                    if (ev.status === 'ideal') idealCount++;
+                    if (ev.status === 'under') underCount++;
+                    if (ev.status === 'over') overCount++;
+                    if (v !== null && v !== '' && Number(v) > 0) {
+                        sum += Number(v);
+                        filledCount++;
+                    }
+                });
+
+                const avgText = h.mode === 'boolean' 
+                    ? L.daysDone(idealCount)
+                    : (filledCount > 0 ? `${L.avgPrefix}: ${(sum / filledCount).toFixed(1)} ${hUnit}` : L.noData);
+
+                summaryList.innerHTML += `
+                    <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/90">
+                        <div class="flex items-center justify-between text-xs mb-1.5">
+                            <span class="font-semibold text-slate-200 truncate pr-2">${hName}</span>
+                            <span class="text-indigo-300 font-medium shrink-0">${avgText}</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-[11px]">
+                            <span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400">${idealCount} ${L.legendIdeal}</span>
+                            <span class="px-2 py-0.5 rounded bg-amber-500/15 text-amber-400">${underCount} ${L.shortUnder}</span>
+                            <span class="px-2 py-0.5 rounded bg-rose-500/15 text-rose-400">${overCount} ${L.shortOver}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            const idealPerDay = [0, 0, 0, 0, 0, 0, 0];
+            const underPerDay = [0, 0, 0, 0, 0, 0, 0];
+            const overPerDay  = [0, 0, 0, 0, 0, 0, 0];
+
+            habits.forEach(h => {
+                h.values.forEach((v, dIdx) => {
+                    const st = evaluateEntry(h, v).status;
+                    if (st === 'ideal') idealPerDay[dIdx]++;
+                    else if (st === 'under') underPerDay[dIdx]++;
+                    else if (st === 'over') overPerDay[dIdx]++;
+                });
+            });
+
             const ctx = document.getElementById('weeklyChart').getContext('2d');
             if (chartInstance) {
-                chartInstance.data.datasets[0].data = dailyCounts;
-                chartInstance.options.scales.y.max = Math.max(totalHabits, 1);
+                chartInstance.data.labels = L.daysShort;
+                chartInstance.data.datasets[0].label = L.legendIdeal;
+                chartInstance.data.datasets[0].data = idealPerDay;
+                chartInstance.data.datasets[1].label = L.legendUnder;
+                chartInstance.data.datasets[1].data = underPerDay;
+                chartInstance.data.datasets[2].label = L.legendOver;
+                chartInstance.data.datasets[2].data = overPerDay;
+                chartInstance.options.scales.y.max = Math.max(habits.length, 1);
                 chartInstance.update();
             } else {
                 chartInstance = new Chart(ctx, {
                     type: 'bar',
                     data: {
-                        labels: DAYS,
-                        datasets: [{
-                            label: 'Tamamlanan Hedef',
-                            data: dailyCounts,
-                            backgroundColor: DAYS.map((_, i) => i === todayIndex ? 'rgba(99, 102, 241, 0.85)' : 'rgba(16, 185, 129, 0.65)'),
-                            borderColor: DAYS.map((_, i) => i === todayIndex ? '#818cf8' : '#34d399'),
-                            borderWidth: 1,
-                            borderRadius: 8,
-                            barThickness: 22
-                        }]
+                        labels: L.daysShort,
+                        datasets: [
+                            { label: L.legendIdeal, data: idealPerDay, backgroundColor: 'rgba(16, 185, 129, 0.8)', borderRadius: 4 },
+                            { label: L.legendUnder, data: underPerDay, backgroundColor: 'rgba(245, 158, 11, 0.8)', borderRadius: 4 },
+                            { label: L.legendOver, data: overPerDay, backgroundColor: 'rgba(244, 63, 94, 0.85)', borderRadius: 4 }
+                        ]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                backgroundColor: '#1e293b',
-                                titleColor: '#f8fafc',
-                                bodyColor: '#cbd5e1',
-                                callbacks: {
-                                    label: (ctx) => ` ${ctx.raw} / ${habits.length} Hedef Tamamlandı`
-                                }
-                            }
+                            legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 10, font: { size: 11 } } }
                         },
                         scales: {
-                            y: {
-                                beginAtZero: true,
-                                max: Math.max(totalHabits, 1),
-                                ticks: { stepSize: 1, color: '#64748b' },
-                                grid: { color: 'rgba(148, 163, 184, 0.08)' }
-                            },
-                            x: {
-                                ticks: { color: '#94a3b8' },
-                                grid: { display: false }
-                            }
+                            x: { stacked: true, ticks: { color: '#94a3b8' }, grid: { display: false } },
+                            y: { stacked: true, beginAtZero: true, max: Math.max(habits.length, 1), ticks: { stepSize: 1, color: '#64748b' }, grid: { color: 'rgba(148, 163, 184, 0.08)' } }
                         }
                     }
                 });
             }
+
+            lucide.createIcons();
         }
 
-        function toggleDay(habitId, dayIdx) {
+        function handleCellClick(habitId, dayIdx) {
             const habit = habits.find(h => h.id === habitId);
-            if (habit) {
-                habit.days[dayIdx] = !habit.days[dayIdx];
+            if (!habit) return;
+
+            if (habit.mode === 'boolean') {
+                habit.values[dayIdx] = habit.values[dayIdx] === 1 ? 0 : 1;
                 saveData();
                 renderTable();
-                updateStatsAndChart();
+                updateSmartAlertsAndStats();
+                return;
+            }
+
+            const L = t();
+            const hUnit = getHabitUnit(habit);
+            activeModalHabitId = habitId;
+            activeModalDayIdx = dayIdx;
+
+            document.getElementById('modalDayBadge').textContent = L.daysFull[dayIdx];
+            document.getElementById('modalHabitTitle').textContent = getHabitName(habit);
+            document.getElementById('modalRuleDesc').textContent = getHabitRuleSummary(habit);
+            document.getElementById('modalUnitLabel').textContent = hUnit;
+
+            const currentVal = habit.values[dayIdx];
+            document.getElementById('modalValueInput').value = (currentVal !== null && currentVal !== undefined) ? currentVal : '';
+
+            const btnContainer = document.getElementById('quickButtonsContainer');
+            btnContainer.innerHTML = '';
+            const steps = habit.stepButtons && habit.stepButtons.length > 0 ? habit.stepButtons : [1, 5, 10];
+            steps.forEach(st => {
+                btnContainer.innerHTML += `
+                    <button type="button" onclick="addQuickValue(${st})" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-indigo-600/40 border border-slate-700 hover:border-indigo-500 text-xs font-semibold text-indigo-300 transition">
+                        +${st} ${hUnit}
+                    </button>
+                `;
+            });
+            btnContainer.innerHTML += `
+                <button type="button" onclick="setExactValue(${habit.target})" class="px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-xs font-semibold text-emerald-300 transition">
+                    ${L.legendIdeal} (${habit.target} ${hUnit})
+                </button>
+            `;
+
+            previewModalStatus();
+            const modal = document.getElementById('entryModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => document.getElementById('modalValueInput').focus(), 50);
+        }
+
+        function addQuickValue(amount) {
+            const input = document.getElementById('modalValueInput');
+            const current = parseFloat(input.value) || 0;
+            input.value = +(current + amount).toFixed(2);
+            previewModalStatus();
+        }
+
+        function setExactValue(val) {
+            document.getElementById('modalValueInput').value = val;
+            previewModalStatus();
+        }
+
+        function clearModalValue() {
+            document.getElementById('modalValueInput').value = '';
+            previewModalStatus();
+        }
+
+        function previewModalStatus() {
+            const L = t();
+            const habit = habits.find(h => h.id === activeModalHabitId);
+            if (!habit) return;
+            const rawVal = document.getElementById('modalValueInput').value;
+            const ev = evaluateEntry(habit, rawVal === '' ? null : parseFloat(rawVal));
+            const box = document.getElementById('modalLiveFeedback');
+
+            if (ev.status === 'ideal') {
+                box.className = 'p-3.5 rounded-xl text-xs font-medium border bg-emerald-500/15 border-emerald-500/40 text-emerald-300';
+                box.innerHTML = `✅ <strong>${L.legendIdeal}:</strong> ${ev.reason}`;
+            } else if (ev.status === 'under') {
+                box.className = 'p-3.5 rounded-xl text-xs font-medium border bg-amber-500/15 border-amber-500/40 text-amber-300';
+                box.innerHTML = `📉 <strong>${L.legendUnder}:</strong> ${ev.reason}`;
+            } else if (ev.status === 'over') {
+                box.className = 'p-3.5 rounded-xl text-xs font-medium border bg-rose-500/20 border-rose-500/50 text-rose-300';
+                box.innerHTML = `🚨 <strong>${L.legendOver}:</strong> ${ev.reason}`;
+            } else {
+                box.className = 'p-3.5 rounded-xl text-xs font-medium border bg-slate-800/80 border-slate-700 text-slate-400';
+                box.innerHTML = L.modalPreviewEmpty;
             }
         }
 
-        function deleteHabit(habitId) {
-            habits = habits.filter(h => h.id !== habitId);
-            saveData();
-            renderTable();
-            updateStatsAndChart();
-        }
-
-        function resetWeek() {
-            if (confirm('Bu haftanın tüm işaretlerini sıfırlamak istediğine emin misin?')) {
-                habits.forEach(h => h.days = [false, false, false, false, false, false, false]);
+        function saveEntryModal() {
+            const habit = habits.find(h => h.id === activeModalHabitId);
+            if (habit && activeModalDayIdx !== null) {
+                const rawVal = document.getElementById('modalValueInput').value;
+                habit.values[activeModalDayIdx] = (rawVal === '' || parseFloat(rawVal) <= 0) ? null : parseFloat(rawVal);
                 saveData();
                 renderTable();
-                updateStatsAndChart();
+                updateSmartAlertsAndStats();
+            }
+            closeEntryModal();
+        }
+
+        function closeEntryModal() {
+            const modal = document.getElementById('entryModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function openAddHabitModal() {
+            const modal = document.getElementById('addHabitModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            toggleNewHabitFields();
+        }
+
+        function closeAddHabitModal() {
+            const modal = document.getElementById('addHabitModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function toggleNewHabitFields() {
+            const L = t();
+            const mode = document.getElementById('newHabitMode').value;
+            const numWrapper = document.getElementById('numericConfigFields');
+            const maxWrapper = document.getElementById('maxLimitFieldWrapper');
+            const labelTarget = document.getElementById('labelTarget');
+
+            if (mode === 'boolean') {
+                numWrapper.classList.add('hidden');
+            } else {
+                numWrapper.classList.remove('hidden');
+                if (mode === 'min') {
+                    maxWrapper.classList.add('hidden');
+                    labelTarget.textContent = L.labelMinGoal;
+                } else if (mode === 'limit') {
+                    maxWrapper.classList.remove('hidden');
+                    labelTarget.textContent = L.labelFloor;
+                    document.getElementById('labelMax').textContent = L.labelCap;
+                } else {
+                    maxWrapper.classList.remove('hidden');
+                    labelTarget.textContent = L.labelIdealMin;
+                    document.getElementById('labelMax').textContent = L.labelIdealMax;
+                }
             }
         }
 
-        document.getElementById('addHabitForm').addEventListener('submit', function(e) {
+        document.getElementById('newHabitForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            const input = document.getElementById('habitInput');
-            const name = input.value.trim();
+            const name = document.getElementById('newHabitName').value.trim();
+            const mode = document.getElementById('newHabitMode').value;
+            const unit = document.getElementById('newHabitUnit').value.trim() || '';
+            const target = parseFloat(document.getElementById('newHabitTarget').value) || 1;
+            const max = parseFloat(document.getElementById('newHabitMax').value) || target * 1.5;
+
             if (name) {
                 habits.push({
                     id: Date.now(),
                     name: name,
-                    days: [false, false, false, false, false, false, false]
+                    mode: mode,
+                    unit: mode === 'boolean' ? '' : unit,
+                    target: target,
+                    max: max,
+                    stepButtons: [+(target * 0.25).toFixed(1), +(target * 0.5).toFixed(1)],
+                    values: [null, null, null, null, null, null, null]
                 });
-                input.value = '';
                 saveData();
                 renderTable();
-                updateStatsAndChart();
+                updateSmartAlertsAndStats();
+                closeAddHabitModal();
+                document.getElementById('newHabitName').value = '';
             }
         });
 
+        function deleteHabit(id) {
+            habits = habits.filter(h => h.id !== id);
+            saveData();
+            renderTable();
+            updateSmartAlertsAndStats();
+        }
+
+        function resetToDefaults() {
+            if (confirm(t().confirmReset)) {
+                localStorage.removeItem('habitTrackerData_v3');
+                habits = JSON.parse(JSON.stringify(defaultHabits));
+                saveData();
+                renderTable();
+                updateSmartAlertsAndStats();
+            }
+        }
+
+        // Başlangıç Yüklemesi
+        applyStaticTranslations();
         renderHeader();
         renderTable();
-        updateStatsAndChart();
-        lucide.createIcons();
+        updateSmartAlertsAndStats();
     </script>
 </body>
 </html>
